@@ -21,3 +21,6 @@ class IsWorkspaceMember(permissions.BasePermission):
         if hasattr(obj, 'workspace'):
             return obj.workspace.members.filter(id=request.user.id).exists()
         return True
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'admin'

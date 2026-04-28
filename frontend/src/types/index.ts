@@ -5,6 +5,9 @@ export interface User {
   username: string;
   first_name?: string;
   last_name?: string;
+  role: "admin" | "manager" | "member";
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Workspace {

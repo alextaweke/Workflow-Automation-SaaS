@@ -1,10 +1,8 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'email', 'username', 'first_name', 'last_name']
+User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -12,7 +10,30 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password']
+        fields = ['id', 'username', 'email', 'password', 'role']
 
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            role=validated_data.get('role', 'member')
+        )
+        return user
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role']
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        token['username'] = user.username
+        token['role'] = user.role
+
+        return token
