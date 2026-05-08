@@ -1,4 +1,4 @@
-from pytz import timezone
+from django.utils import timezone
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,6 +7,9 @@ from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
+
+from accounts.models import User
+from accounts.serializers import UserSerializer
 from .models import Workspace, WorkspaceMembership, WorkspaceInvitation
 from .serializers import (
     WorkspaceSerializer, WorkspaceCreateSerializer, WorkspaceInvitationSerializer,
@@ -20,7 +23,7 @@ from rest_framework.decorators import action
 
 from django.db.models import Q, Count
 from .models import Company, Department
-from .serializers import CompanySerializer, DepartmentSerializer
+from .serializers import CompanySerializer, DepartmentSerializer,WorkspaceMembershipSerializer,UserBasicSerializer
 
 
 
@@ -321,6 +324,15 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(workspaces, many=True)
         return Response(serializer.data)
+    # workspaces/views.py - Add this to WorkspaceViewSet
+
+    # @action(detail=True, methods=['get'])
+    # def members(self, request, pk=None):
+    #     """Get all workspace members with their details"""
+    #     workspace = self.get_object()
+    #     members = workspace.members.all()
+    #     serializer = UserBasicSerializer(members, many=True)
+    #     return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def switch_workspace(self, request):
@@ -349,6 +361,9 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
             'message': f'Active workspace set to {workspace.name}',
             'workspace_id': workspace.id
         })
+    
+    
+# views.py - Update CompanyViewSet
 
 class CompanyViewSet(viewsets.ModelViewSet):
     serializer_class = CompanySerializer
@@ -356,15 +371,29 @@ class CompanyViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        return Company.objects.filter(
+        workspace_id = self.request.query_params.get('workspace_id')
+        
+        queryset = Company.objects.filter(
             Q(owner=user) | Q(departments__members=user)
         ).distinct().annotate(
             department_count=Count('departments', distinct=True),
             member_count=Count('departments__members', distinct=True)
         )
+        
+        # Filter by workspace if provided
+        if workspace_id:
+            queryset = queryset.filter(workspace_id=workspace_id)
+        
+        return queryset
     
     def perform_create(self, serializer):
-        company = serializer.save()
+        workspace_id = self.request.data.get('workspace')
+        if workspace_id:
+            workspace = get_object_or_404(Workspace, id=workspace_id, members=self.request.user)
+            company = serializer.save(owner=self.request.user, workspace=workspace)
+        else:
+            company = serializer.save(owner=self.request.user)
+        
         logger.info(f"Company {company.id} created by user {self.request.user.id}")
     
     @action(detail=True, methods=['get'])
@@ -372,17 +401,79 @@ class CompanyViewSet(viewsets.ModelViewSet):
         """Get all departments for a company"""
         company = self.get_object()
         departments = company.departments.all()
-        serializer = DepartmentSerializer(departments, many=True)
+        serializer = DepartmentSerializer(departments, many=True, context={'request': request})
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def add_department(self, request, pk=None):
         """Add a department to company"""
         company = self.get_object()
-        serializer = DepartmentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(company=company)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # Log the incoming data for debugging
+        logger.info(f"Add department request data: {request.data}")
+        
+        # Validate required fields
+        name = request.data.get('name')
+        if not name:
+            return Response(
+                {"error": "Department name is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Prepare data for serializer
+        department_data = {
+            'name': name,
+            'description': request.data.get('description', ''),
+            'company': company.id,
+        }
+        
+        # Add manager if provided
+        manager_id = request.data.get('manager')
+        if manager_id and manager_id != '':
+            try:
+                department_data['manager'] = int(manager_id)
+            except (ValueError, TypeError):
+                return Response(
+                    {"error": "Invalid manager ID"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Add parent department if provided
+        parent_id = request.data.get('parent_department')
+        if parent_id and parent_id != '':
+            try:
+                parent_id_int = int(parent_id)
+                # Verify parent department exists and belongs to this company
+                parent_exists = Department.objects.filter(
+                    id=parent_id_int, 
+                    company=company
+                ).exists()
+                if not parent_exists:
+                    return Response(
+                        {"error": "Parent department not found in this company"}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                department_data['parent_department'] = parent_id_int
+            except (ValueError, TypeError):
+                return Response(
+                    {"error": "Invalid parent department ID"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Create the department
+        serializer = DepartmentSerializer(
+            data=department_data, 
+            context={'request': request}
+        )
+        
+        if serializer.is_valid():
+            department = serializer.save()
+            logger.info(f"Department {department.id} created in company {company.id}")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # Log validation errors
+        logger.error(f"Department validation errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['get'])
     def stats(self, request, pk=None):
@@ -395,9 +486,36 @@ class CompanyViewSet(viewsets.ModelViewSet):
             )['total'] or 0,
             'departments': list(company.departments.values('id', 'name', 'member_count')),
             'created_at': company.created_at,
-            'is_verified': company.is_verified
+            'is_verified': company.is_verified,
+            'workspace': {
+                'id': company.workspace.id if company.workspace else None,
+                'name': company.workspace.name if company.workspace else None,
+            }
         }
         return Response(stats)
+    
+    @action(detail=True, methods=['post'])
+    def assign_to_workspace(self, request, pk=None):
+        """Assign company to a workspace"""
+        company = self.get_object()
+        workspace_id = request.data.get('workspace_id')
+        
+        if not workspace_id:
+            return Response({"error": "workspace_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            workspace = Workspace.objects.get(id=workspace_id, members=request.user)
+            company.workspace = workspace
+            company.save()
+            return Response({
+                'message': f'Company {company.name} assigned to workspace {workspace.name}',
+                'workspace': {'id': workspace.id, 'name': workspace.name}
+            })
+        except Workspace.DoesNotExist:
+            return Response({"error": "Workspace not found or you don't have access"}, status=status.HTTP_404_NOT_FOUND)
+
+
+# views.py - Update DepartmentViewSet
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
@@ -405,9 +523,23 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        return Department.objects.filter(
+        workspace_id = self.request.query_params.get('workspace_id')
+        
+        queryset = Department.objects.filter(
             Q(company__owner=user) | Q(members=user)
         ).distinct()
+        
+        # Filter by workspace through company
+        if workspace_id:
+            queryset = queryset.filter(company__workspace_id=workspace_id)
+        
+        return queryset
+    
+    def get_permissions(self):
+        # Add workspace permission checks
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
     
     @action(detail=True, methods=['post'])
     def add_member(self, request, pk=None):
@@ -415,14 +547,32 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         department = self.get_object()
         user_id = request.data.get('user_id')
         
-        from django.conf import settings
+        if not user_id:
+            return Response(
+                {"error": "user_id is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         try:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if user is in the workspace
+        workspace = department.company.workspace
+        if workspace and not workspace.members.filter(id=user_id).exists():
+            return Response(
+                {"error": "User must be a member of the workspace first"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         department.members.add(user)
-        return Response({'message': f'Member {user.username} added'})
+        return Response({
+            'message': f'Member {user.username} added',
+            'member_count': department.members.count()
+        })
     
     @action(detail=True, methods=['delete'])
     def remove_member(self, request, pk=None):
@@ -430,5 +580,23 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         department = self.get_object()
         user_id = request.query_params.get('user_id')
         
+        if not user_id:
+            return Response(
+                {"error": "user_id is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         department.members.remove(user_id)
-        return Response({'message': 'Member removed'})
+        return Response({
+            'message': 'Member removed',
+            'member_count': department.members.count()
+        })
+    
+    @action(detail=True, methods=['get'])
+    def members(self, request, pk=None):
+        """Get all department members"""
+        department = self.get_object()
+        users = department.members.all()
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data)
+    

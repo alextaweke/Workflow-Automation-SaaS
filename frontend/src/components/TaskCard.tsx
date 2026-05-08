@@ -1,214 +1,221 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-// components/tasks/TaskCard.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useTaskStore } from "@/stores/taskStore";
-import {
-  Calendar,
-  User,
-  Tag,
-  ChevronRight,
-  Clock,
-  AlertCircle,
-} from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
-import toast from "react-hot-toast";
 import { Task } from "@/types";
+import {
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  PencilIcon,
+  TrashIcon,
+  FlagIcon,
+  UserCircleIcon,
+  CalendarIcon,
+  ChatBubbleLeftRightIcon,
+} from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 interface TaskCardProps {
   task: Task;
+  onEdit: (task: Task) => void;
+  onDelete: (id: number) => void;
+  onComplete: (task: Task) => void;
   viewMode: "grid" | "list";
 }
 
-export function TaskCard({ task, viewMode }: TaskCardProps) {
-  const router = useRouter();
-  const { updateTask } = useTaskStore();
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  const priorityColors = {
-    low: "bg-gray-100 text-gray-800",
-    medium: "bg-blue-100 text-blue-800",
-    high: "bg-orange-100 text-orange-800",
-    urgent: "bg-red-100 text-red-800",
-    critical: "bg-purple-100 text-purple-800",
-  };
-
-  const statusColors = {
-    todo: "bg-yellow-100 text-yellow-800",
-    in_progress: "bg-blue-100 text-blue-800",
-    review: "bg-purple-100 text-purple-800",
-    done: "bg-green-100 text-green-800",
-    archived: "bg-gray-100 text-gray-800",
-  };
-
-  const handleStatusChange = async (newStatus: string) => {
-    setIsUpdating(true);
-    try {
-      await updateTask(task.id, { status: newStatus });
-      toast.success("Task status updated");
-    } catch (error) {
-      toast.error("Failed to update status");
-    } finally {
-      setIsUpdating(false);
+export function TaskCard({
+  task,
+  onEdit,
+  onDelete,
+  onComplete,
+  viewMode,
+}: TaskCardProps) {
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const isOverdue = task.is_overdue && task.status !== "done";
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "done":
+        return "bg-green-100 text-green-800";
+      case "in_progress":
+        return "bg-blue-100 text-blue-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
-  if (viewMode === "list") {
+  if (viewMode === "grid") {
     return (
-      <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3
-                className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600"
-                onClick={() => router.push(`/tasks/${task.id}`)}
-              >
-                {task.title}
-              </h3>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}
-              >
-                {task.priority}
-              </span>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[task.status]}`}
-              >
-                {task.status.replace("_", " ")}
-              </span>
-              {isOverdue && (
-                <span className="flex items-center gap-1 text-red-600 text-xs">
-                  <AlertCircle className="h-3 w-3" />
-                  Overdue
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <Link href={`/tasks/${task.id}`} className="block">
+                <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                  {task.title}
+                </h3>
+              </Link>
+              <div className="flex items-center gap-2 mt-2">
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}
+                >
+                  <FlagIcon className="w-3 h-3" />
+                  {task.priority}
                 </span>
-              )}
-            </div>
-
-            {task.description && (
-              <p className="text-gray-600 text-sm mb-2 line-clamp-1">
-                {task.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              {task.assigned_to_details && (
-                <div className="flex items-center gap-1">
-                  <User className="h-4 w-4" />
-                  <span>{task.assigned_to_details.username}</span>
-                </div>
-              )}
-              {task.due_date && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    Due {formatDistanceToNow(new Date(task.due_date))} ago
-                  </span>
-                </div>
-              )}
-              {task.tags && task.tags.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <Tag className="h-4 w-4" />
-                  <span>{task.tags.slice(0, 2).join(", ")}</span>
-                </div>
-              )}
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}
+                >
+                  {task.status === "done" ? (
+                    <CheckCircleIcon className="w-3 h-3" />
+                  ) : (
+                    <ClockIcon className="w-3 h-3" />
+                  )}
+                  {task.status.replace("_", " ")}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={task.status}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              disabled={isUpdating}
-              className="px-3 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="todo">To Do</option>
-              <option value="in_progress">In Progress</option>
-              <option value="review">Review</option>
-              <option value="done">Done</option>
-            </select>
-            <button
-              onClick={() => router.push(`/tasks/${task.id}`)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronRight className="h-5 w-5 text-gray-400" />
-            </button>
+          {/* Description */}
+          <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+            {task.description}
+          </p>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-2">
+              <UserCircleIcon className="w-5 h-5 text-gray-400" />
+              <span className="text-xs text-gray-500">
+                Assigned to {task.assigned_to_details?.username || "Unassigned"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {task.status !== "done" && (
+                <button
+                  onClick={() => onComplete(task)}
+                  className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                  title="Mark complete"
+                >
+                  <CheckCircleIcon className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => onEdit(task)}
+                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Edit task"
+              >
+                <PencilIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onDelete(task.id)}
+                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Delete task"
+              >
+                <TrashIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="flex items-center gap-3 mt-3 pt-2 text-xs text-gray-500">
+            <div className="flex items-center gap-1">
+              <CalendarIcon className="w-3 h-3" />
+              <span>{new Date(task.created_at).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ChatBubbleLeftRightIcon className="w-3 h-3" />
+              <span>{task.comments?.length || 0} comments</span>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // List view
   return (
-    <div className="bg-white rounded-lg shadow hover:shadow-md transition">
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-3">
-          <h3
-            className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600"
-            onClick={() => router.push(`/tasks/${task.id}`)}
-          >
-            {task.title}
-          </h3>
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[task.priority]}`}
-          >
-            {task.priority}
-          </span>
-        </div>
-
-        {task.description && (
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 p-4">
+      <div className="flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <Link href={`/tasks/${task.id}`} className="block">
+            <h3 className="text-base font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+              {task.title}
+            </h3>
+          </Link>
+          <div className="flex items-center gap-3 mt-1">
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}
+            >
+              <FlagIcon className="w-3 h-3" />
+              {task.priority}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}
+            >
+              {task.status === "done" ? (
+                <CheckCircleIcon className="w-3 h-3" />
+              ) : (
+                <ClockIcon className="w-3 h-3" />
+              )}
+              {task.status.replace("_", " ")}
+            </span>
+            <span className="text-xs text-gray-500">
+              Due: {new Date(task.due_date).toLocaleDateString()}
+            </span>
+          </div>
+          <p className="text-gray-600 text-sm line-clamp-1 mt-2">
             {task.description}
           </p>
-        )}
-
-        <div className="space-y-2 mb-4">
-          {task.assigned_to_details && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <User className="h-4 w-4" />
-              <span>{task.assigned_to_details.username}</span>
-            </div>
-          )}
-          {task.due_date && (
-            <div
-              className="flex items-center gap-2 text-sm"
-              //className={isOverdue ? "text-red-600" : "text-gray-600"}
-            >
-              <Calendar className="h-4 w-4" />
-              <span>Due {format(new Date(task.due_date), "MMM dd, yyyy")}</span>
-              {isOverdue && (
-                <span className="text-red-600 text-xs">(Overdue)</span>
-              )}
-            </div>
-          )}
-          {task.estimated_hours && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span>{task.estimated_hours} hours est.</span>
-            </div>
-          )}
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[task.status]}`}
-          >
-            {task.status.replace("_", " ")}
-          </span>
-          <select
-            value={task.status}
-            onChange={(e) => handleStatusChange(e.target.value)}
-            disabled={isUpdating}
-            className="text-sm border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todo">To Do</option>
-            <option value="in_progress">In Progress</option>
-            <option value="review">Review</option>
-            <option value="done">Done</option>
-          </select>
+        <div className="flex items-center gap-3">
+          <div className="text-right hidden sm:block">
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <UserCircleIcon className="w-4 h-4" />
+              <span>{task.assigned_to_details?.username || "Unassigned"}</span>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              Created {new Date(task.created_at).toLocaleDateString()}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {task.status !== "done" && (
+              <button
+                onClick={() => onComplete(task)}
+                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                title="Mark complete"
+              >
+                <CheckCircleIcon className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={() => onEdit(task)}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Edit task"
+            >
+              <PencilIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(task.id)}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Delete task"
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

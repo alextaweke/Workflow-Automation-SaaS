@@ -464,7 +464,14 @@ class Company(models.Model):
         ("services", "Services"),
         ("other", "Other"),
     )
-
+    workspace = models.ForeignKey(
+        'Workspace',
+        on_delete=models.CASCADE,
+        related_name='companies',
+        null=True,
+        blank=True,
+        help_text="The workspace this company belongs to"
+    )
     uuid = models.UUIDField(
         default=uuid.uuid4,
         editable=False,
@@ -594,6 +601,7 @@ class Company(models.Model):
     objects = CompanyManager()
 
     class Meta:
+        verbose_name = "Company"
         verbose_name_plural = "Companies"
 
         ordering = ["name"]

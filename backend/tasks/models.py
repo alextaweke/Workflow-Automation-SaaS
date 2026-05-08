@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinLengthValidator, MaxLengthValidator
-from pytz import timezone
+from django.utils import timezone
 from workspaces.models import Workspace
 import uuid
 
@@ -75,7 +75,23 @@ class Task(models.Model):
         null=True, 
         blank=True
     )
-    
+    company = models.ForeignKey(
+    'workspaces.Company',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name='tasks',
+    help_text="The company this task belongs to"
+    )
+
+    department = models.ForeignKey(
+    'workspaces.Department',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name='tasks',
+    help_text="The department this task belongs to"
+    )
     # Parent-child relationship for task breakdown
     parent_task = models.ForeignKey(
         'self',

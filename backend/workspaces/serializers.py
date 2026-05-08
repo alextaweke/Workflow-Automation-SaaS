@@ -369,62 +369,19 @@ class CompanySerializer(serializers.ModelSerializer):
     )
 
     owner_details = serializers.SerializerMethodField()
+    workspace_details = serializers.SerializerMethodField()
+    workspace_name = serializers.CharField(source='workspace.name', read_only=True)
 
     class Meta:
         model = Company
-
-        fields = [
-            "id",
-            "uuid",
-
-            "name",
-            "legal_name",
-            "description",
-
-            "company_type",
-            "industry",
-
-            "email",
-            "phone",
-            "website",
-
-            "address_line1",
-            "address_line2",
-            "city",
-            "state",
-            "postal_code",
-            "country",
-
-            "full_address",
-
-            "tax_id",
-            "registration_number",
-
-            "logo",
-            "primary_color",
-
-            "owner",
-            "owner_details",
-
-            "config",
-
-            "is_active",
-            "is_verified",
-
-            "created_at",
-            "updated_at",
-            "verified_at",
-
-            "department_count",
-            "member_count",
-        ]
-
+        fields = "__all__"
         read_only_fields = [
             "uuid",
             "created_at",
             "updated_at",
             "verified_at",
             "is_verified",
+            "owner",
         ]
 
     def get_owner_details(self, obj):
@@ -448,6 +405,14 @@ class CompanySerializer(serializers.ModelSerializer):
         validated_data["owner"] = request.user
 
         return super().create(validated_data)
+    def get_workspace_details(self, obj):
+        if obj.workspace:
+            return {
+                "id": obj.workspace.id,
+                "name": obj.workspace.name,
+                "plan": obj.workspace.plan,
+            }
+        return None
 
 
 class DepartmentSerializer(serializers.ModelSerializer):

@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       Cookies.set("access_token", tokens.access, {
-        expires: 1,
+        expires: 10 / 1440, // 10 minutes
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
       });

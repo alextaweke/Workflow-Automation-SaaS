@@ -26,22 +26,24 @@ interface AuthStore {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  expiresAt: number | null;
   isLoading: boolean;
+
   login: (username: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updateProfile: (data: any) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   fetchUser: () => Promise<void>;
 }
-
+const EXPIRE_TIME = 1000 * 60 * 60; // 1 hour in milliseconds
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
+      expiresAt: null,
       isLoading: false,
 
       login: async (username: string, password: string) => {
@@ -66,6 +68,7 @@ export const useAuthStore = create<AuthStore>()(
             user: data.user,
             accessToken: data.access,
             refreshToken: data.refresh,
+            expiresAt: Date.now() + EXPIRE_TIME,
           });
         } catch (error) {
           throw error;
@@ -76,27 +79,33 @@ export const useAuthStore = create<AuthStore>()(
 
       register: async (userData) => {
         set({ isLoading: true });
+
         try {
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/auth/register/`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+              },
               body: JSON.stringify(userData),
             },
           );
 
+          const data = await response.json();
+
           if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Registration failed");
+            throw data;
           }
 
-          const data = await response.json();
           set({
             user: data.user,
             accessToken: data.access,
             refreshToken: data.refresh,
+            expiresAt: Date.now() + EXPIRE_TIME,
           });
+
+          return data;
         } catch (error) {
           throw error;
         } finally {

@@ -1,13 +1,32 @@
+
 from rest_framework import serializers
 from django.conf import settings
 from django.utils import timezone
+
+from accounts.models import User
+from workspaces.models import Company, Department, Workspace
 from .models import Task
 
 class UserBasicSerializer(serializers.ModelSerializer):
     """Simplified user serializer for nested relationships"""
     class Meta:
-        model = settings.AUTH_USER_MODEL
+        model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
+
+
+class CompanyBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['id', 'name', 'legal_name']
+
+class DepartmentBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = ['id', 'name', 'full_path']
+class WorkspaceBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Workspace
+        fields = ['id', 'name', 'plan']
 
 class TaskSerializer(serializers.ModelSerializer):
     # Read-only computed fields
@@ -26,11 +45,19 @@ class TaskSerializer(serializers.ModelSerializer):
     
     # URL field for HATEOAS
     absolute_url = serializers.SerializerMethodField()
-    
+    # Company and Department details for context
+    company_details = CompanyBasicSerializer(source='company', read_only=True)
+    department_details = DepartmentBasicSerializer(source='department', read_only=True)
+    workspace_details = WorkspaceBasicSerializer(
+    source='workspace',
+    read_only=True
+    )
     class Meta:
         model = Task
         fields = [
-            'id', 'uuid', 'title', 'description', 'workspace',
+            'id', 'uuid', 'title', 'description', 'workspace', 'workspace_details',
+            'company', 'company_details',  # Add these
+            'department', 'department_details',  # Add these
             'parent_task', 'parent_task_details', 'subtasks',
             'assigned_to', 'assigned_to_details', 'created_by', 'created_by_details',
             'collaborators', 'collaborators_details',
@@ -100,7 +127,9 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'title', 'description', 'workspace', 'parent_task',
+            'title', 'description', 'workspace', 
+            'company', 'department',  # Add these
+            'parent_task',
             'assigned_to', 'collaborators', 'status', 'priority',
             'due_date', 'start_date', 'estimated_hours', 'tags'
         ]
@@ -108,6 +137,15 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get('request')
         validated_data['created_by'] = request.user
+        
+        # Validate that department belongs to company
+        if validated_data.get('department') and validated_data.get('company'):
+            department = validated_data['department']
+            if department.company_id != validated_data['company'].id:
+                raise serializers.ValidationError(
+                    "Department must belong to the selected company"
+                )
+        
         return super().create(validated_data)
 
 class TaskBulkUpdateSerializer(serializers.Serializer):

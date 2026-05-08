@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/api.ts - API Client
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -24,7 +23,6 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
-
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
@@ -46,77 +44,6 @@ api.interceptors.response.use(
   },
 );
 
-// Workspace API
-export const workspaceApi = {
-  getAll: () => api.get("/workspaces/"),
-
-  getById: (id: number) => api.get(`/workspaces/${id}/`),
-
-  create: (data: unknown) => api.post("/workspaces/", data),
-
-  update: (id: number, data: any) => api.put(`/workspaces/${id}/`, data),
-
-  delete: (id: number) => api.delete(`/workspaces/${id}/`),
-
-  getStats: (id: number) => api.get(`/workspaces/${id}/stats/`),
-
-  addMember: (id: number, userId: number, role: string) =>
-    api.post(`/workspaces/${id}/add_member/`, {
-      user_id: userId,
-      role,
-    }),
-
-  removeMember: (id: number, userId: number) =>
-    api.delete(`/workspaces/${id}/remove_member/?user_id=${userId}`),
-
-  inviteMember: (id: number, email: string, role: string) =>
-    api.post(`/workspaces/${id}/invite_member/`, {
-      email,
-      role,
-    }),
-
-  getMembers: (id: number) => api.get(`/workspaces/${id}/members/`),
-
-  updateMemberRole: (id: number, userId: number, role: string) =>
-    api.patch(`/workspaces/${id}/update_member_role/`, {
-      user_id: userId,
-      role,
-    }),
-};
-
-// Company API
-export const companyApi = {
-  getAll: () => api.get("/companies/"),
-  getById: (id: number) => api.get(`/companies/${id}/`),
-  create: (data: any) => api.post("/companies/", data),
-  update: (id: number, data: any) => api.put(`/companies/${id}/`, data),
-  delete: (id: number) => api.delete(`/companies/${id}/`),
-  getDepartments: (id: number) => api.get(`/companies/${id}/departments/`),
-  addDepartment: (id: number, data: any) =>
-    api.post(`/companies/${id}/add_department/`, data),
-  getStats: (id: number) => api.get(`/companies/${id}/stats/`),
-};
-// export const companyApi = {
-//   getAll: (params?: any) => api.get("/companies/", { params }),
-//   getById: (id: number) => api.get(`/companies/${id}/`),
-//   create: (data: any) => api.post("/companies/", data),
-//   update: (id: number, data: any) => api.put(`/companies/${id}/`, data),
-//   delete: (id: number) => api.delete(`/companies/${id}/`),
-//   getDepartments: (id: number) => api.get(`/companies/${id}/departments/`),
-//   addDepartment: (id: number, data: any) =>
-//     api.post(`/companies/${id}/add_department/`, data),
-//   getStats: (id: number) => api.get(`/companies/${id}/stats/`),
-// };
-
-export const departmentApi = {
-  getById: (id: number) => api.get(`/departments/${id}/`),
-  update: (id: number, data: any) => api.patch(`/departments/${id}/`, data),
-  delete: (id: number) => api.delete(`/departments/${id}/`),
-  addMember: (id: number, userId: number) =>
-    api.post(`/departments/${id}/add_member/`, { user_id: userId }),
-  removeMember: (id: number, userId: number) =>
-    api.delete(`/departments/${id}/remove_member/?user_id=${userId}`),
-};
 export default api;
 
 // /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -262,3 +189,16 @@ export default api;
 // const apiClient = new ApiClient();
 // export const api = apiClient.getInstance();
 // export default apiClient;
+// Workspace API
+
+// export const companyApi = {
+//   getAll: (params?: any) => api.get("/companies/", { params }),
+//   getById: (id: number) => api.get(`/companies/${id}/`),
+//   create: (data: any) => api.post("/companies/", data),
+//   update: (id: number, data: any) => api.put(`/companies/${id}/`, data),
+//   delete: (id: number) => api.delete(`/companies/${id}/`),
+//   getDepartments: (id: number) => api.get(`/companies/${id}/departments/`),
+//   addDepartment: (id: number, data: any) =>
+//     api.post(`/companies/${id}/add_department/`, data),
+//   getStats: (id: number) => api.get(`/companies/${id}/stats/`),
+// };

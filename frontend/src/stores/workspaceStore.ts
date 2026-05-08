@@ -1,35 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // stores/workspaceStore.ts
 import { create } from "zustand";
-import { Workspace, WorkspaceStats } from "@/types";
-// interface Workspace {
-//   id: number;
-//   uuid: string;
-//   name: string;
-//   description: string;
-//   plan: string;
-//   member_count: number;
-//   total_tasks?: number;
-//   completed_tasks?: number;
-//   max_members?: number;
-//   max_storage_mb?: number;
-//   days_until_expiry?: number | null;
-//   members?: any[];
-//   created_at: string;
-// }
-
-// interface WorkspaceStats {
-//   totalWorkspaces: number;
-//   totalMembers: number;
-//   completedTasks: number;
-//   activePlan: string;
-// }
+import { Workspace, WorkspaceStats, Member } from "@/types";
 
 interface WorkspaceStore {
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
+
   stats: WorkspaceStats;
   isLoading: boolean;
+
+  // ✅ FIX: correct naming usage
+  fetchWorkspaceById: (id: number) => Promise<void>;
+
+  // ✅ ADD THIS (if you use members)
+  fetchWorkspaceMembers: (workspaceId: number) => Promise<Member[]>;
+
   inviteMember: (
     workspaceId: number,
     email: string,
@@ -41,12 +27,14 @@ interface WorkspaceStore {
     role: string,
   ) => Promise<void>;
   removeMember: (workspaceId: number, userId: number) => Promise<void>;
+
   fetchWorkspaces: () => Promise<void>;
-  fetchWorkspaceById: (id: string) => Promise<void>;
-  fetchStats: () => Promise<void>;
+  fetchStats: (workspaceId?: number) => Promise<void>;
+
   createWorkspace: (data: any) => Promise<void>;
   updateWorkspace: (id: number, data: any) => Promise<void>;
   deleteWorkspace: (id: number) => Promise<void>;
+  members?: any[]; // Add this if you want to store members in the workspace store
 }
 
 export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
@@ -76,11 +64,23 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   },
   isLoading: false,
 
+  fetchWorkspaceMembers: async (workspaceId: number) => {
+    try {
+      const { workspaceApi } = await import("@/lib/workspaceApi");
+
+      const response = await workspaceApi.getMembers(workspaceId);
+
+      return response.data; // ✅ THIS IS THE FIX
+    } catch (error) {
+      console.error("Failed to fetch members:", error);
+      return []; // optional safe fallback
+    }
+  },
   fetchWorkspaces: async () => {
     set({ isLoading: true });
 
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
       const response = await workspaceApi.getAll();
 
       const data = response.data;
@@ -102,11 +102,11 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     }
   },
 
-  fetchWorkspaceById: async (id: string) => {
+  fetchWorkspaceById: async (id: number) => {
     set({ isLoading: true });
     try {
-      const { workspaceApi } = await import("@/lib/api");
-      const response = await workspaceApi.getById(parseInt(id));
+      const { workspaceApi } = await import("@/lib/workspaceApi");
+      const response = await workspaceApi.getById(id);
       set({ currentWorkspace: response.data });
     } catch (error) {
       console.error("Failed to fetch workspace:", error);
@@ -117,7 +117,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   fetchStats: async (workspaceId?: number) => {
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
 
       if (!workspaceId) return;
 
@@ -130,7 +130,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   createWorkspace: async (data: any) => {
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
       const response = await workspaceApi.create(data);
       set((state) => ({ workspaces: [response.data, ...state.workspaces] }));
       return response.data;
@@ -141,7 +141,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   updateWorkspace: async (id: number, data: any) => {
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
       const response = await workspaceApi.update(id, data);
       set((state) => ({
         workspaces: state.workspaces.map((w) =>
@@ -156,7 +156,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   deleteWorkspace: async (id: number) => {
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
       await workspaceApi.delete(id);
       set((state) => ({
         workspaces: state.workspaces.filter((w) => w.id !== id),
@@ -186,7 +186,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   removeMember: async (workspaceId: number, userId: number) => {
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
       await workspaceApi.removeMember(workspaceId, userId);
     } catch (error) {
       console.error("Failed to remove member:", error);
@@ -200,7 +200,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     role: string,
   ) => {
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
       await workspaceApi.updateMemberRole(workspaceId, userId, role);
     } catch (error) {
       console.error("Failed to update member role:", error);
@@ -210,7 +210,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   inviteMember: async (workspaceId: number, email: string, role: string) => {
     try {
-      const { workspaceApi } = await import("@/lib/api");
+      const { workspaceApi } = await import("@/lib/workspaceApi");
       await workspaceApi.inviteMember(workspaceId, email, role);
     } catch (error) {
       console.error("Failed to invite member:", error);

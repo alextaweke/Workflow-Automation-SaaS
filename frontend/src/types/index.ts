@@ -22,6 +22,13 @@ export interface User {
   is_super_admin: boolean;
   active_companies_count: number;
 }
+export interface UserBasics {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+}
 export interface TaskForm {
   title: string;
   description: string;
@@ -35,37 +42,54 @@ export interface Task {
   title: string;
   description: string;
 
-  status: TaskStatus;
-  priority: TaskPriority;
-
   workspace: number;
+  workspace_details?: Workspace;
+  company?: number; // Add this
+  company_details?: {
+    // Add this
+    id: number;
+    name: string;
+    legal_name?: string;
+  };
+  department?: number; // Add this
+  department_details?: {
+    // Add this
+    id: number;
+    name: string;
+    full_path: string;
+  };
 
-  assigned_to?: number;
-  assigned_to_details?: User;
-
+  parent_task?: number | null;
+  parent_task_details?: Task | null;
+  subtasks?: Task[];
+  assigned_to?: number | null;
+  assigned_to_details?: UserBasics | null;
   created_by: number;
   created_by_details?: User;
-
   collaborators?: number[];
   collaborators_details?: User[];
-
-  due_date?: string;
-  start_date?: string;
-  completed_at?: string;
-
-  estimated_hours?: number;
-  actual_hours?: number;
-
+  status: "todo" | "in_progress" | "review" | "done" | "archived";
+  priority: "low" | "medium" | "high" | "urgent" | "critical";
   tags: string[];
+  due_date?: string | null;
+  start_date?: string | null;
 
-  created_at: string;
-  updated_at: string;
-
-  is_overdue: boolean;
-  completion_percentage: number;
+  estimated_hours?: number | null;
+  actual_hours?: number | null;
   time_variance?: number;
+  created_at: string;
+  completion_percentage: number;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  last_modified_by?: number;
+  absolute_url?: string;
+  is_overdue?: boolean;
+  completed_at?: string;
+  updated_at: string;
 }
 export interface Workspace {
+  task_count: number;
+  workspace: string;
   memberships: never[];
   completed_tasks: number;
   days_until_expiry: import("react/jsx-runtime").JSX.Element;
@@ -113,6 +137,8 @@ export interface WorkspaceStats {
 }
 
 export interface TaskStats {
+  completion_rate: any;
+  in_progress_tasks: any;
   total_tasks: number;
   completed_tasks: number;
   in_progress: number;
@@ -122,6 +148,7 @@ export interface TaskStats {
   tasks_by_priority: Array<{ priority: string; count: number }>;
   tasks_by_status: Array<{ status: string; count: number }>;
   recent_tasks: Task[];
+  avg_completion_time: number;
 }
 
 export interface LoginCredentials {
@@ -173,11 +200,41 @@ export interface PaginatedResponse<T> {
   total_pages: number;
   current_page: number;
 }
+export interface TaskStatistics {
+  total_tasks: number;
+  completed_tasks: number;
+  in_progress: number;
+  todo: number;
+  overdue: number;
+  high_priority: number;
+  tasks_by_priority: Array<{ priority: string; count: number }>;
+  tasks_by_status: Array<{ status: string; count: number }>;
+  recent_tasks: Task[];
+}
 
-interface Filters {
+export interface TimelineItem {
+  id: number;
+  title: string;
+  start: string;
+  end: string;
   status: string;
   priority: string;
+  assignee: string | null;
+  completion: number;
+}
+export interface Filters {
+  status: string[];
+  priority: string[];
+  assigned_to?: number;
+  workspace?: number;
+  due_before?: string;
+  due_after?: string;
+  created_after?: string;
   search: string;
+  tags?: string[];
+  is_overdue?: boolean;
+  page?: number;
+  page_size?: number;
 }
 
 interface TaskFiltersProps {
@@ -192,3 +249,24 @@ export type TaskStatus =
   | "archived";
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent" | "critical";
+
+export interface Member {
+  id: number;
+  user: number;
+  user_details: {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
+  role: string;
+  joined_at: string;
+  last_accessed: string | null;
+}
+
+export interface role {
+  id: number;
+  name: string;
+  permissions: string[];
+}

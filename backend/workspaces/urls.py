@@ -4,7 +4,7 @@ from .views import WorkspaceViewSet, CompanyViewSet, DepartmentViewSet
 
 router = DefaultRouter()
 
-router.register(r'', WorkspaceViewSet, basename="workspace")
+router.register(r'workspaces', WorkspaceViewSet, basename="workspace")
 router.register(r'companies', CompanyViewSet, basename="company")
 router.register(r'departments', DepartmentViewSet, basename="department")
 

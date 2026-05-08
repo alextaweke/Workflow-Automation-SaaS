@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // stores/companyStore.ts
-import { create } from "zustand";
 
+import { User } from "@/types";
+import { create } from "zustand";
 interface Department {
   id: number;
   name: string;
@@ -70,6 +71,7 @@ interface CompanyStore {
   updateCompany: (id: number, data: any) => Promise<void>;
   deleteCompany: (id: number) => Promise<void>;
   getCompanyStats: (id: number) => Promise<any>;
+  fetchDepartmentMembers: (departmentId: number) => Promise<User[]>;
   addDepartment: (companyId: number, data: any) => Promise<void>;
   updateDepartment: (departmentId: number, data: any) => Promise<void>;
   deleteDepartment: (departmentId: number) => Promise<void>;
@@ -89,7 +91,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   fetchCompanies: async () => {
     set({ isLoading: true });
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       const response = await companyApi.getAll();
       set({ companies: response.data.results || response.data });
     } catch (error) {
@@ -103,9 +105,10 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   fetchCompanyById: async (id: number) => {
     set({ isLoading: true });
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       const response = await companyApi.getById(id);
       set({ currentCompany: response.data });
+      return response.data;
     } catch (error) {
       console.error("Failed to fetch company:", error);
       throw error;
@@ -117,7 +120,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   fetchCompanyDepartments: async (companyId: number) => {
     set({ isLoading: true });
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       const response = await companyApi.getDepartments(companyId);
       set({ departments: response.data });
     } catch (error) {
@@ -131,14 +134,14 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   createCompany: async (data: any) => {
     set({ isLoading: true });
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       const response = await companyApi.create(data);
       set((state) => ({
         companies: [response.data, ...state.companies],
       }));
       return response.data;
-    } catch (error) {
-      console.error("Failed to create company:", error);
+    } catch (error: any) {
+      console.error("BACKEND ERROR:", error.response?.data);
       throw error;
     } finally {
       set({ isLoading: false });
@@ -148,7 +151,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   updateCompany: async (id: number, data: any) => {
     set({ isLoading: true });
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       const response = await companyApi.update(id, data);
       set((state) => ({
         companies: state.companies.map((c) =>
@@ -167,7 +170,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   deleteCompany: async (id: number) => {
     set({ isLoading: true });
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       await companyApi.delete(id);
       set((state) => ({
         companies: state.companies.filter((c) => c.id !== id),
@@ -182,7 +185,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
 
   getCompanyStats: async (id: number) => {
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       const response = await companyApi.getStats(id);
       return response.data;
     } catch (error) {
@@ -191,10 +194,22 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
     }
   },
 
+  fetchDepartmentMembers: async (departmentId: number) => {
+    try {
+      const { departmentApi } = await import("@/lib/departmentApi");
+
+      const response = await departmentApi.getMembers(departmentId);
+
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch department members:", error);
+      return [];
+    }
+  },
   addDepartment: async (companyId: number, data: any) => {
     set({ isLoading: true });
     try {
-      const { companyApi } = await import("@/lib/api");
+      const { companyApi } = await import("@/lib/companyApi");
       const response = await companyApi.addDepartment(companyId, data);
       set((state) => ({
         departments: [...state.departments, response.data],
@@ -211,7 +226,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   updateDepartment: async (departmentId: number, data: any) => {
     set({ isLoading: true });
     try {
-      const { departmentApi } = await import("@/lib/api");
+      const { departmentApi } = await import("@/lib/departmentApi");
       const response = await departmentApi.update(departmentId, data);
       set((state) => ({
         departments: state.departments.map((d) =>
@@ -229,7 +244,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
   deleteDepartment: async (departmentId: number) => {
     set({ isLoading: true });
     try {
-      const { departmentApi } = await import("@/lib/api");
+      const { departmentApi } = await import("@/lib/departmentApi");
       await departmentApi.delete(departmentId);
       set((state) => ({
         departments: state.departments.filter((d) => d.id !== departmentId),
@@ -244,7 +259,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
 
   addDepartmentMember: async (departmentId: number, userId: number) => {
     try {
-      const { departmentApi } = await import("@/lib/api");
+      const { departmentApi } = await import("@/lib/departmentApi");
       await departmentApi.addMember(departmentId, userId);
     } catch (error) {
       console.error("Failed to add department member:", error);
@@ -254,7 +269,7 @@ export const useCompanyStore = create<CompanyStore>((set, get) => ({
 
   removeDepartmentMember: async (departmentId: number, userId: number) => {
     try {
-      const { departmentApi } = await import("@/lib/api");
+      const { departmentApi } = await import("@/lib/departmentApi");
       await departmentApi.removeMember(departmentId, userId);
     } catch (error) {
       console.error("Failed to remove department member:", error);
