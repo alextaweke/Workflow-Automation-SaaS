@@ -52,7 +52,7 @@ PostgreSQL
 JWT Authentication
 Django Filters
 ## 📁roject Structure
-backend/
+##backend/
 ├── authentication/
 ├── workspaces/
 ├── companies/
@@ -60,46 +60,46 @@ backend/
 ├── users/
 └── manage.py
 
-frontend/
+##frontend/
 ├── app/
 ├── components/
 ├── stores/
 ├── lib/
 ├── types/
 └── public/
-##⚙️ Installation
+## ⚙️ Installation
 Clone Repository
 git clone <your-repo-url>
 cd workflow-saas
 🔧 Backend Setup (Django)
 Create Virtual Environment
 ## 📡 API Endpoints
-Authentication
+## Authentication
 POST /api/auth/register/
 POST /api/auth/login/
 POST /api/auth/logout/
-Workspaces
+## Workspaces
 GET    /api/workspaces/
 POST   /api/workspaces/
 GET    /api/workspaces/{id}/
 PUT    /api/workspaces/{id}/
 DELETE /api/workspaces/{id}/
-Workspace Members
+## Workspace Members
 POST /api/workspaces/{id}/invite_member/
 POST /api/workspaces/{id}/add_member/
 PATCH /api/workspaces/{id}/update_member_role/
 DELETE /api/workspaces/{id}/remove_member/
-Workspace Stats
+## Workspace Stats
 GET /api/workspaces/{id}/stats/
-Companies
+## Companies
 GET    /api/companies/
 POST   /api/companies/
 GET    /api/companies/{id}/
-Departments
+@@ Departments
 GET    /api/departments/
 POST   /api/departments/
 GET    /api/departments/{id}/
-Tasks
+## Tasks
 GET    /api/tasks/
 POST   /api/tasks/
 GET    /api/tasks/{id}/
