@@ -85,10 +85,10 @@ GET    /api/workspaces/{id}/
 PUT    /api/workspaces/{id}/
 DELETE /api/workspaces/{id}/
 ## Workspace Members
-POST /api/workspaces/{id}/invite_member/
-POST /api/workspaces/{id}/add_member/
-PATCH /api/workspaces/{id}/update_member_role/
-DELETE /api/workspaces/{id}/remove_member/
+#POST /api/workspaces/{id}/invite_member/
+#POST /api/workspaces/{id}/add_member/
+#PATCH /api/workspaces/{id}/update_member_role/
+#DELETE /api/workspaces/{id}/remove_member/
 ## Workspace Stats
 GET /api/workspaces/{id}/stats/
 ## Companies
