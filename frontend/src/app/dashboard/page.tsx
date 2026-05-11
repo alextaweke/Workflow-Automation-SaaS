@@ -372,13 +372,15 @@ export default function DashboardPage() {
                   Here s your workspace overview and task analytics
                 </p>
               </div>
-              <button
-                onClick={() => router.push("/tasks/create")}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-shadow"
-              >
-                <PlusIcon className="w-5 h-5" />
-                New Task
-              </button>
+              {(user?.role === "admin" || user?.role === "owner") && (
+                <button
+                  onClick={() => router.push("/tasks/create")}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-shadow"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  New Task
+                </button>
+              )}
             </div>
 
             {/* Key Metrics Grid */}

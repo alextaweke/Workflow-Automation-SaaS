@@ -470,6 +470,7 @@ export default function DashboardPage() {
                     onDelete={handleDeleteTask}
                     onComplete={handleTaskComplete}
                     viewMode={viewMode}
+                    user={user!}
                   />
                 ))}
               </div>

@@ -37,6 +37,7 @@ export interface TaskForm {
   due_date: string;
 }
 export interface Task {
+  comments: any;
   id: number;
   uuid: string;
   title: string;
@@ -71,7 +72,7 @@ export interface Task {
   status: "todo" | "in_progress" | "review" | "done" | "archived";
   priority: "low" | "medium" | "high" | "urgent" | "critical";
   tags: string[];
-  due_date?: string | null;
+  due_date: string | number | Date;
   start_date?: string | null;
 
   estimated_hours?: number | null;

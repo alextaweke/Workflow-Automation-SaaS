@@ -16,6 +16,9 @@ import Link from "next/link";
 
 interface TaskCardProps {
   task: Task;
+  user: {
+    role: string;
+  };
   onEdit: (task: Task) => void;
   onDelete: (id: number) => void;
   onComplete: (task: Task) => void;
@@ -24,11 +27,15 @@ interface TaskCardProps {
 
 export function TaskCard({
   task,
+  user,
   onEdit,
   onDelete,
   onComplete,
   viewMode,
 }: TaskCardProps) {
+  const canManageTask =
+    user?.role?.toLowerCase() === "admin" ||
+    user?.role?.toLowerCase() === "owner";
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
@@ -111,20 +118,26 @@ export function TaskCard({
                   <CheckCircleIcon className="w-4 h-4" />
                 </button>
               )}
-              <button
-                onClick={() => onEdit(task)}
-                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Edit task"
-              >
-                <PencilIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onDelete(task.id)}
-                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Delete task"
-              >
-                <TrashIcon className="w-4 h-4" />
-              </button>
+
+              {canManageTask && (
+                <div>
+                  <button
+                    onClick={() => onEdit(task)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Edit task"
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => onDelete(task.id)}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete task"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -201,20 +214,25 @@ export function TaskCard({
                 <CheckCircleIcon className="w-4 h-4" />
               </button>
             )}
-            <button
-              onClick={() => onEdit(task)}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Edit task"
-            >
-              <PencilIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onDelete(task.id)}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Delete task"
-            >
-              <TrashIcon className="w-4 h-4" />
-            </button>
+            {canManageTask && (
+              <>
+                <button
+                  onClick={() => onEdit(task)}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Edit task"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete task"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
