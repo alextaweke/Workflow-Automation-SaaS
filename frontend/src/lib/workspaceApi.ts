@@ -11,9 +11,12 @@ export const workspaceApi = {
   update: (id: number, data: any) => api.put(`/workspaces/${id}/`, data),
 
   delete: (id: number) => api.delete(`/workspaces/${id}/`),
-
+  getTaskTrends: () => api.get("/workspaces/task_trends/"),
+  getWorkspaceDistribution: () =>
+    api.get("/workspaces/workspace_distribution/"),
+  getWeeklyActivity: () => api.get("/workspaces/weekly_activity/"),
   getStats: (id: number) => api.get(`/workspaces/${id}/stats/`),
-
+  getGlobalStats: () => api.get(`/workspaces/my_stats/`),
   addMember: (id: number, userId: number, role: string) =>
     api.post(`/workspaces/${id}/add_member/`, {
       user_id: userId,

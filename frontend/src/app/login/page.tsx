@@ -53,7 +53,6 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -154,16 +153,15 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
         {/* Demo credentials */}
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-500 text-center mb-2">
+          {/* <p className="text-xs text-gray-500 text-center mb-2">
             Demo Credentials:
-          </p>
-          <div className="text-xs text-gray-600 space-y-1">
+          </p> */}
+          {/* <div className="text-xs text-gray-600 space-y-1">
             <p>Email: demo@example.com</p>
             <p>Password: demo123</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
