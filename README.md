@@ -67,3 +67,65 @@ frontend/
 ├── lib/
 ├── types/
 └── public/
+##⚙️ Installation
+Clone Repository
+git clone <your-repo-url>
+cd workflow-saas
+🔧 Backend Setup (Django)
+Create Virtual Environment
+## 📡 API Endpoints
+Authentication
+POST /api/auth/register/
+POST /api/auth/login/
+POST /api/auth/logout/
+Workspaces
+GET    /api/workspaces/
+POST   /api/workspaces/
+GET    /api/workspaces/{id}/
+PUT    /api/workspaces/{id}/
+DELETE /api/workspaces/{id}/
+Workspace Members
+POST /api/workspaces/{id}/invite_member/
+POST /api/workspaces/{id}/add_member/
+PATCH /api/workspaces/{id}/update_member_role/
+DELETE /api/workspaces/{id}/remove_member/
+Workspace Stats
+GET /api/workspaces/{id}/stats/
+Companies
+GET    /api/companies/
+POST   /api/companies/
+GET    /api/companies/{id}/
+Departments
+GET    /api/departments/
+POST   /api/departments/
+GET    /api/departments/{id}/
+Tasks
+GET    /api/tasks/
+POST   /api/tasks/
+GET    /api/tasks/{id}/
+PATCH  /api/tasks/{id}/
+DELETE /api/tasks/{id}/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
